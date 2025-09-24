@@ -14,15 +14,14 @@ class Server():
         self.mode = mode_of_operation
 
     def _get_fresh_cipher(self):
-        match self.mode:
-            case 'ECB':
-                return AES.new(self.key, AES.MODE_ECB)
-            case 'CBC':
-                return AES.new(self.key, AES.MODE_CBC, iv=self.iv)
-            case 'CTR':
-                return AES.new(self.key, AES.MODE_CTR, nonce=self.nonce)
-            case _:
-                raise ValueError('Unknown mode of operation')
+        if self.mode == 'ECB':
+            return AES.new(self.key, AES.MODE_ECB)
+        elif self.mode == 'CBC':
+            return AES.new(self.key, AES.MODE_CBC, iv=self.iv)
+        elif self.mode == 'CTR':
+            return AES.new(self.key, AES.MODE_CTR, nonce=self.nonce)
+        else:
+            raise ValueError('Unknown mode of operation')
 
     def generate_guest_token(self, name: str, pwd: str) -> bytes:
         """Receives name and password strings, and returns an encrypted user token."""
@@ -65,3 +64,36 @@ class Server():
                 return f'decrypt error {str(e)}'
             else:
                 return f'other error {str(e)}'
+            
+    def decrypt_token(self, enc_token: bytes) -> str:
+        """For testing purposes only: decrypts a token and returns the plaintext."""
+        cipher = self._get_fresh_cipher()
+        if self.mode.startswith('CTR'):
+            return cipher.decrypt(enc_token).decode('ascii')
+        else:
+            padded_token = cipher.decrypt(enc_token)
+            print(unpad(padded_token, AES.block_size).decode('ascii'))
+            return unpad(padded_token, AES.block_size).decode('ascii')
+
+        
+# if __name__ == "__main__":
+#     name = 'alice'
+#     pwd = 'wonderland'
+#     server = Server('CTR')
+#     token = server.generate_guest_token(name, pwd)
+#     old = b"guest"
+#     new = b"admin"  
+#     #old_extended = ser
+
+#     template = f"name={name}&pwd={pwd}&role=guest&code={server.code}"
+#     offset = template.index("guest")
+#     offset_code = template.index("code=")
+#     print("Offset of 'guest':", offset)
+#     print("Offset of 'code=': ", offset_code," Length of 'code=': ", len(server.code))
+
+#     modified_token = bytearray(token)
+#     for i in range(len(old)):
+#         modified_token[offset + i] ^= old[i] ^ new[i]
+#     modified_token = bytes(modified_token)
+#     print("Server read_token output:", server.read_token(modified_token, name, pwd))
+    
