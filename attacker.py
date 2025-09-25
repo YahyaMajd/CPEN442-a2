@@ -1,9 +1,35 @@
 # File to complete by the students
 from typing import Callable
 from Crypto.Cipher import AES
+import string
+
 
 def guess_code_ecb(generate_guest_token: Callable, read_token: Callable) -> str:
-    return ''
+    alphabet = string.ascii_letters + string.digits + "+/="
+    
+    # Get reference token to identify target block containing first character
+    ref_name = "simon"
+    ref_pwd = "password1234567"
+    ref_token = generate_guest_token(ref_name, ref_pwd)
+    target_block = ref_token[32:48]  # Block 2: "ole=guest&code=" + first_char
+    
+    # ECB byte-at-a-time attack: try each character
+    for ch in alphabet:
+        # Attack pattern discovered through systematic testing:
+        # Name: 6 A's, Password: "ole=guest&code=" + test_char + padding
+        # This creates block 1 with content "ole=guest&code=" + ch
+        
+        test_name = "A" * 6
+        test_pwd = "ole=guest&code=" + ch + "BBBBBBBBB"
+        
+        test_token = generate_guest_token(test_name, test_pwd)
+        test_block = test_token[16:32]  # Block 1
+        
+        if test_block == target_block:
+            return ch  # Found the first character!
+    
+    return '?'  # Failed to find first character
+
 
 def forge_admin_token_ecb(generate_guest_token: Callable, read_token: Callable) -> tuple[bytes, str, str]:
     return bytes(0), 'name', 'pwd'
