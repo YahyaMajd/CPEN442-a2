@@ -42,22 +42,20 @@ def forge_admin_token_ctr(generate_guest_token: Callable, read_token: Callable) 
     name = 'alice'
     pwd = 'wonderland'
     
-    
     guest_token = generate_guest_token(name, pwd)
     
-    # The token structure is: "name=alice&pwd=wonderland&role=guest&code=XXXXX"
-    # We know the exact offset where "guest" starts
-    template_prefix = f"name={name}&pwd={pwd}&role="
-    guest_offset = len(template_prefix)
-       
-    role_offset = template_prefix.index("role=")
-    old_segment = b"role=guest"  # 10 bytes
-    new_segment = b"role=admin"  # 10 bytes
+    template_prefix = f"name={name}&pwd=wonde"
+    segment_offset = len(template_prefix)  # Offset where "rland" starts
     
-    # Apply bit-flipping attack
+    
+    old_segment = b"rland&role=guest"  # 17 bytes  
+    new_segment = b"&role=superadmin&"  # 17 bytes
+    
+    
     modified_token = bytearray(guest_token)
     for i in range(len(old_segment)):
-        modified_token[role_offset + i] ^= old_segment[i] ^ new_segment[i]
-    
-    return bytes(modified_token), name, pwd
+        modified_token[segment_offset + i] ^= old_segment[i] ^ new_segment[i]
+
+    modified_pwd = "wonde"
+    return bytes(modified_token), name, modified_pwd
 
